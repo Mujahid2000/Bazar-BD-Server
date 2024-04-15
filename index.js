@@ -25,8 +25,8 @@ const client = new MongoClient(uri, {
 });
 
 
-const store_id = 'bazar6616ab1a02971'
-const store_passwd = 'bazar6616ab1a02971@ssl'
+const store_id = `${process.env.STORE_ID}`
+const store_passwd = `${process.env.STORE_PASS}`
 const is_live = false //true for live, false for sandbox
 
 
@@ -38,7 +38,9 @@ async function run() {
     const AddCartCollection = client.db('Bazar-BD').collection('cart')
     const DiscountCollection = client.db('Bazar-BD').collection('Discount')
     const PaymentCollection = client.db('Bazar-BD').collection('Payment')
-    const SuccessCollection = client.db('Bazar-BD').collection('Success')
+    const UserCollection = client.db('Bazar-BD').collection('User');
+    const WishlistCollection = client.db('Bazar-BD').collection('Wishlist');
+    
 
       app.get('/addProducts', async (req, res) =>{
       const result = await ProductCollection.find().toArray();
@@ -85,24 +87,25 @@ async function run() {
     })
 
     app.post('/payment', async(req, res) =>{
-      const money = (req.body.payment);
-      console.log(req.body.data);
+      const myData = (req.body);
+      const sendingData = (myData?.cart);
+      const email = (myData.email);
+      const money = (req.body.payment)
       const tran_id = new ObjectId().toString();
-      console.log(tran_id);
       const data = {
         total_amount: money,
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: `http://localhost:5173/dashboard/paid/${tran_id}`,
-        fail_url: 'http://localhost:5173/dashboard/failed',
-        cancel_url: 'http://localhost:5173/dashboard/cancel',
-        ipn_url: 'http://localhost:5173/ipn',
+        success_url: `http://localhost:5000/dashboard/paid/${tran_id}`,
+        fail_url: `http://localhost:5000/dashboard/failed/${tran_id}`,
+        cancel_url: `http://localhost:5000/dashboard/cancel/${tran_id}`,
+        ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
         product_name: 'Computer.',
         product_category: 'Electronic',
         product_profile: 'general',
         cus_name: 'Mujahid',
-        cus_email: 'customer@example.com',
+        cus_email: email,
         cus_add1: 'Dhaka',
         cus_add2: 'Dhaka',
         cus_city: 'Dhaka',
@@ -119,19 +122,127 @@ async function run() {
         ship_postcode: 1000,
         ship_country: 'Bangladesh',
     };
-    // console.log(data);
-     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
-     sslcz.init(data).then(apiResponse => {
-          // Redirect the user to payment gateway
-         let GatewayPageURL = apiResponse.GatewayPageURL
-         res.send({ url: GatewayPageURL })
-        console.log('Redirecting to: ', GatewayPageURL)
-     });
-     app.post('/dashboard/paid/:tranId', async(req, res) => {
-      console.log('tranId', req.params.tran_id);
-    });
 
     
+    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+    sslcz.init(data).then(apiResponse => {
+      // Redirect the user to payment gateway
+      let GatewayPageURL = apiResponse.GatewayPageURL
+      res.send({ url: GatewayPageURL })
+      // console.log('Redirecting to: ', GatewayPageURL)
+    });
+    
+    
+    const finalOrder = {
+      sendingData,
+      email,
+      paidStatus: false,
+      transactionId : tran_id
+    }
+
+    const orderCollection = await PaymentCollection.insertOne(finalOrder)
+
+    app.post('/dashboard/paid/:tranId', async(req, res) => {
+      const emailId = {email : email}
+      const filter = { transactionId: req.params.tranId};
+
+      const updateData = {
+        $set: {
+          packagePurchaseDate: new Date(),
+          paidStatus: true,
+          deliveryStatus: false,
+          transactionId: req.params.tranId
+        }
+      }
+      const orderCollection = await PaymentCollection.updateOne(filter, updateData);
+      const deleteCart = await AddCartCollection.deleteMany(emailId)
+
+
+     if(orderCollection.modifiedCount > 0){
+       res.redirect(
+         `http://localhost:5173/dashboard/paid/${req.params.tranId}`
+       )
+     }
+      
+    });
+
+
+    // if user fail payment
+    app.post('/dashboard/failed/:tranId', async (req, res) => {
+      const tranId = req.params.tranId
+      console.log(tranId)
+      res.redirect(
+        `http://localhost:5173/dashboard/failed/${req.params.tranId}`
+      )
+    })
+
+    // if user cancel payment
+    app.post('/dashboard/cancel/:tranId', async (req, res) => {
+      const tranId = req.params.tranId
+      console.log('cancel', tranId)
+    })
+    })
+
+
+
+    app.get('/order/:email', async (req, res) =>{
+      const email = req.params.email;
+      console.log(email);
+      const filter = {email : email}
+      const result = await PaymentCollection.find(filter).toArray();
+      res.send(result);
+    })
+
+
+    app.post('/user', async (req, res) =>{
+      const user = req.body;
+      const result = await UserCollection.insertOne(user);
+      res.send(result)
+    })
+    app.get('/user/:email', async (req, res) =>{
+      const email = req.params.email;
+      const filter = {email : email}
+      const result = await UserCollection.findOne(filter);
+      res.send(result)
+    })
+
+
+    app.get('/users', async (req, res) =>{
+      const result = await UserCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.post('/wishlist', async(req, res) =>{
+      const user = req.body;
+      const result = await WishlistCollection.insertOne(user);
+      res.send(result);
+    })
+
+    app.get('/wishlist/:email', async(req, res) =>{
+      const email = req.params.email;
+   
+      const filter = {email : email};
+      const result = await WishlistCollection.find(filter).toArray();
+      res.send(result)
+    })
+
+    app.delete('/wishlist/:id', async(req, res) =>{
+      const id = req.params.id;
+     
+      const filter ={ _id : new ObjectId(id)}
+      const result = await WishlistCollection.deleteOne(filter);
+      res.send(result)
+    })
+
+    app.get('/totalOrder', async(req, res) =>{
+      const result = await PaymentCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/uploadProduct', async(req, res) =>{
+      const data = req.body;
+      const result = await ProductCollection.insertOne(data);
+      res.send(result);
     })
 
     // Send a ping to confirm a successful connection
