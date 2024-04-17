@@ -101,9 +101,9 @@ async function run() {
         total_amount: money,
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: `http://localhost:5000/dashboard/paid/${tran_id}`,
-        fail_url: `http://localhost:5000/dashboard/failed/${tran_id}`,
-        cancel_url: `http://localhost:5000/dashboard/cancel/${tran_id}`,
+        success_url: `https://bazar-bd-server.vercel.app/dashboard/paid/${tran_id}`,
+        fail_url: `https://bazar-bd-server.vercel.app/dashboard/failed/${tran_id}`,
+        cancel_url: `https://bazar-bd-server.vercel.app/dashboard/cancel/${tran_id}`,
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
         product_name: 'Computer.',
