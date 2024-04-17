@@ -47,6 +47,11 @@ async function run() {
       res.send(result);
     })
 
+    app.put('/addProducts', async(req, res) =>{
+      const id = req.params.id;
+      // const 
+    })
+
 
       app.get('/addProducts/:id', async (req, res) =>{
       const id = req.params.id;
@@ -160,7 +165,7 @@ async function run() {
 
      if(orderCollection.modifiedCount > 0){
        res.redirect(
-         `http://localhost:5173/dashboard/paid/${req.params.tranId}`
+         `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/paid/${req.params.tranId}`
        )
      }
       
@@ -172,7 +177,7 @@ async function run() {
       const tranId = req.params.tranId
       console.log(tranId)
       res.redirect(
-        `http://localhost:5173/dashboard/failed/${req.params.tranId}`
+        `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/failed/${req.params.tranId}`
       )
     })
 
