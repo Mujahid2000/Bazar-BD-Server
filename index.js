@@ -47,10 +47,20 @@ async function run() {
       res.send(result);
     })
 
-    app.put('/addProducts', async(req, res) =>{
-      const id = req.params.id;
-      // const 
-    })
+    app.put('/addProductsUpdate/:id', async (req, res) => {
+      const productId = req.params.id;
+      const filter = {_id : new ObjectId(productId)}
+      const  {stock}  = req.body;
+      console.log(typeof(stock));
+      const updateData = {
+        $set:{
+          stock: stock
+        }
+      }
+      const updateStock = await ProductCollection.findOneAndUpdate(filter, updateData);
+      res.send(updateStock)
+  });
+  
 
 
       app.get('/addProducts/:id', async (req, res) =>{
