@@ -61,7 +61,7 @@ async function run() {
       res.send(updateStock)
   });
   
-
+  app.post('/')
 
       app.get('/addProducts/:id', async (req, res) =>{
       const id = req.params.id;
@@ -76,6 +76,14 @@ async function run() {
       res.send(result);
   });
 
+      app.post('/productDiscount', async(req, res) =>{
+      const product = req.body
+      console.log(product);
+      const result = await DiscountCollection.insertOne(product);
+      res.send(result);
+    });
+
+    
       app.get('/productDiscount', async(req, res) =>{
       const result = await DiscountCollection.find().toArray();
       res.send(result);
