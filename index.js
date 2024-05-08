@@ -109,6 +109,8 @@ async function run() {
       res.send(result);
     })
 
+    // first payment
+
     app.post('/payment', async(req, res) =>{
       const myData = (req.body);
       const sendingData = (myData?.cart);
@@ -181,11 +183,111 @@ async function run() {
       const deleteCart = await AddCartCollection.deleteMany(emailId)
 
 
-     if(orderCollection.modifiedCount > 0){
-       res.redirect(
-         `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/paid/${req.params.tranId}`
-       )
-     }
+    if(orderCollection.modifiedCount > 0){
+      res.redirect(
+      `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/paid/${req.params.tranId}`
+      )
+    }
+      
+    });
+
+
+    // if user fail payment
+    app.post('/dashboard/failed/:tranId', async (req, res) => {
+      const tranId = req.params.tranId
+      console.log(tranId)
+      res.redirect(
+        `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/failed/${req.params.tranId}`
+      )
+    })
+
+    // if user cancel payment
+    app.post('/dashboard/cancel/:tranId', async (req, res) => {
+      const tranId = req.params.tranId
+      console.log('cancel', tranId)
+    })
+    })
+
+    // 2nd payment
+
+
+    app.post('/myPayment', async(req, res) =>{
+      const myData = (req.body);
+      
+      const sendingData = (myData?.cart);
+      const email = (myData.email);
+      const money = (req.body.payment)
+      const tran_id = new ObjectId().toString();
+      const data = {
+        total_amount: money,
+        currency: 'BDT',
+        tran_id: tran_id, // use unique tran_id for each api call
+        success_url: `http://localhost:5000/dashboard/paid/${tran_id}`,
+        fail_url: `https://bazar-bd-server.vercel.app/dashboard/failed/${tran_id}`,
+        cancel_url: `https://bazar-bd-server.vercel.app/dashboard/cancel/${tran_id}`,
+        ipn_url: 'http://localhost:3030/ipn',
+        shipping_method: 'Courier',
+        product_name: 'Computer.',
+        product_category: 'Electronic',
+        product_profile: 'general',
+        cus_name: 'Mujahid',
+        cus_email: email,
+        cus_add1: 'Dhaka',
+        cus_add2: 'Dhaka',
+        cus_city: 'Dhaka',
+        cus_state: 'Dhaka',
+        cus_postcode: '1000',
+        cus_country: 'Bangladesh',
+        cus_phone: '01711111111',
+        cus_fax: '01711111111',
+        ship_name: 'Customer Name',
+        ship_add1: 'Dhaka',
+        ship_add2: 'Dhaka',
+        ship_city: 'Dhaka',
+        ship_state: 'Dhaka',
+        ship_postcode: 1000,
+        ship_country: 'Bangladesh',
+    };
+
+    
+    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+    sslcz.init(data).then(apiResponse => {
+      // Redirect the user to payment gateway
+      let GatewayPageURL = apiResponse.GatewayPageURL
+      res.send({ url: GatewayPageURL })
+      // console.log('Redirecting to: ', GatewayPageURL)
+    });
+    
+    
+    const finalOrder = {
+      sendingData,
+      email,
+      paidStatus: false,
+      transactionId : tran_id
+    }
+
+    const orderCollection = await PaymentCollection.insertOne(finalOrder)
+
+    app.post('/dashboard/paid/:tranId', async(req, res) => {
+      const emailId = {email : email}
+      const filter = { transactionId: req.params.tranId};
+
+      const updateData = {
+        $set: {
+          packagePurchaseDate: new Date(),
+          paidStatus: true,
+          deliveryStatus: false,
+          transactionId: req.params.tranId
+        }
+      }
+      const orderCollection = await PaymentCollection.updateOne(filter, updateData);
+      
+
+    if(orderCollection.modifiedCount > 0){
+      res.redirect(
+      `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/paid/${req.params.tranId}`
+      )
+    }
       
     });
 
