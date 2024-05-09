@@ -47,6 +47,32 @@ async function run() {
       res.send(result);
     })
 
+    app.delete('/products', async (req, res) => {
+      const { ids } = req.body; // Assuming frontend sends an array of product IDs to delete, or a single ID
+      
+      try {
+          const db = client.db('Bazar-BD'); // Replace 'your_database_name' with your actual database name
+          const productsCollection = db.collection('Products'); // Assuming your collection name is 'products'
+  
+          if (Array.isArray(ids)) {
+              // Convert string IDs to ObjectId for bulk delete
+              const objectIds = ids.map(id => new ObjectId(id));
+              // Delete multiple products from the MongoDB collection
+              await productsCollection.deleteMany({ _id: { $in: objectIds } });
+          } else {
+              // Convert string ID to ObjectId for single delete
+              const objectId = new ObjectId(ids);
+              // Delete single product from the MongoDB collection
+              await productsCollection.deleteOne({ _id: objectId });
+          }
+  
+          res.status(200).json({ success: true, message: "Products deleted successfully" });
+      } catch (error) {
+          console.error("Error deleting products:", error);
+          res.status(500).json({ success: false, error: "Failed to delete products" });
+      }
+  });
+
     app.put('/addProductsUpdate/:id', async (req, res) => {
       const productId = req.params.id;
       const filter = {_id : new ObjectId(productId)}
@@ -213,7 +239,7 @@ async function run() {
 
     app.post('/myPayment', async(req, res) =>{
       const myData = (req.body);
-      
+      console.log(myData);
       const sendingData = (myData?.cart);
       const email = (myData.email);
       const money = (req.body.payment)
@@ -222,7 +248,7 @@ async function run() {
         total_amount: money,
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: `https://bazar-bd-server.vercel.app/dashboard/paid/${tran_id}`,
+        success_url: `http://localhost:5000/dashboard/paid/${tran_id}`,
         fail_url: `https://bazar-bd-server.vercel.app/dashboard/failed/${tran_id}`,
         cancel_url: `https://bazar-bd-server.vercel.app/dashboard/cancel/${tran_id}`,
         ipn_url: 'http://localhost:3030/ipn',
