@@ -1,13 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const app = express();
 const SSLCommerzPayment = require('sslcommerz-lts');
 const cors = require('cors');
 require('dotenv').config();
 
 // console.log(process.env.ACCESS_TOKEN_SECRET);
-
+const jwtSecretKey = 'd0ea768daaabd52844748e8f3f49cc9d69c0f6163cbb73dd4f1d5a6c8328346f63eefb7ca83a6f202ccd1650f675c7830d83530e69de7ce83667ea3aee8cdce7';
 const port = process.env.PORT || 5000;
 const { ObjectId } = require('mongodb');
 
@@ -57,10 +56,6 @@ async function run() {
           return res.send({ message: 'User already exists', insertId: null });
       }
   
-      // Hash password before saving in database
-      const salt = bcrypt.genSaltSync(10);
-      user.password = bcrypt.hashSync(user.password, salt);
-  
       // Insert new user
       const result = await UserCollection.insertOne(user);
   
@@ -71,16 +66,32 @@ async function run() {
   });
   
   app.post('/login', async (req, res) => {
-      const { email, password } = req.body;
+      const { email } = req.body;
       const user = await UserCollection.findOne({ email });
-      if (!user || !bcrypt.compareSync(password, user.password)) {
+      if (!user) {
           return res.status(401).json({ message: 'Invalid email or password' });
       }
+  
+      // Create JWT token
       const token = jwt.sign({ email: user.email }, jwtSecretKey, { expiresIn: '1h' });
+  
       res.json({ token });
   });
 
-  function authenticate(req, res, next) {
+
+  app.get('/user/:email', authenticate, async (req, res) => {
+    const email = req.params.email;
+    const filter = { email };
+    const result = await UserCollection.findOne(filter);
+    res.send(result);
+});
+
+app.get('/users', authenticate, async (req, res) => {
+    const result = await UserCollection.find().toArray();
+    res.send(result);
+});
+
+function authenticate(req, res, next) {
     const token = req.header('Authorization');
 
     if (!token) {
@@ -95,18 +106,6 @@ async function run() {
         res.status(400).json({ message: 'Token is not valid' });
     }
 }
-
-app.get('/user/:email', authenticate, async (req, res) => {
-  const email = req.params.email;
-  const filter = { email };
-  const result = await UserCollection.findOne(filter);
-  res.send(result);
-});
-
-app.get('/users', authenticate, async (req, res) => {
-  const result = await UserCollection.find().toArray();
-  res.send(result);
-});
 
     
 
