@@ -95,7 +95,7 @@ async function run() {
     })
 
 
-    app.get('/users',verifyToken, async (req, res) =>{
+    app.get('/users', async (req, res) =>{
       const result = await UserCollection.find().toArray();
       res.send(result)
     }) 
@@ -187,7 +187,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addCart/:email',verifyToken, async (req, res) =>{
+    app.get('/addCart/:email', async (req, res) =>{
       const email = req.params.email;
       const filter = {email : email}
       const result = await AddCartCollection.find(filter).toArray();
@@ -412,7 +412,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/wishlist/:email',verifyToken, async(req, res) =>{
+    app.get('/wishlist/:email', async(req, res) =>{
       const email = req.params.email;
    
       const filter = {email : email};
