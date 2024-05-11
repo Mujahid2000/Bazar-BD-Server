@@ -44,7 +44,38 @@ async function run() {
     
 
     
-    
+    app.post('/jwt', async(req, res) =>{
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '5h'})
+      res.send({token})
+    })
+
+    const verifyToken = (req, res, next) =>{
+      console.log('inside verify toke ',req.headers.authorization);
+      if(!req.headers.authorization){
+        return res.status(401).send({message: 'unauthorized access'})
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+        if(err){
+          return res.status(401).send({message: 'unauthorized access'})
+        }
+        req.decoded = decoded;
+        next();
+      })
+    }
+
+    const verifyAdmin = async (req, res, next) =>{
+      const email = req.decoded.email;
+      const query = {email: email};
+      const user = await UserCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if(!isAdmin){
+        return res.status(403).send({message: 'forbidden access'})
+      }
+      next();
+    }
+  
     
     app.post('/user', async (req, res) =>{
       const user = req.body;
@@ -64,7 +95,7 @@ async function run() {
     })
 
 
-    app.get('/users', async (req, res) =>{
+    app.get('/users',verifyToken, async (req, res) =>{
       const result = await UserCollection.find().toArray();
       res.send(result)
     }) 
@@ -156,7 +187,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addCart/:email', async (req, res) =>{
+    app.get('/addCart/:email',verifyToken, async (req, res) =>{
       const email = req.params.email;
       const filter = {email : email}
       const result = await AddCartCollection.find(filter).toArray();
@@ -364,7 +395,7 @@ async function run() {
 
 
 
-    app.get('/order/:email', async (req, res) =>{
+    app.get('/order/:email', verifyToken,async (req, res) =>{
       const email = req.params.email;
       console.log(email);
       const filter = {email : email}
@@ -381,7 +412,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/wishlist/:email', async(req, res) =>{
+    app.get('/wishlist/:email',verifyToken, async(req, res) =>{
       const email = req.params.email;
    
       const filter = {email : email};
