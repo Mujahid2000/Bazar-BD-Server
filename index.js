@@ -54,7 +54,7 @@ async function run() {
       res.send({token})
     })
 
-    const verifyToken = async (req, res, next) => {
+    const verifyToken = (req, res, next) => {
       const token = req.headers.authorization;
       //  console.log(token);
     
