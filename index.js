@@ -54,7 +54,7 @@ async function run() {
       res.send({token})
     })
 
-    const verifyToken = (req, res, next) => {
+    const verifyToken = async (req, res, next) => {
       const token = req.headers.authorization;
       //  console.log(token);
     
@@ -331,7 +331,7 @@ async function run() {
 
     app.post('/myPayment', async(req, res) =>{
       const myData = (req.body);
-      console.log(myData);
+      // console.log(myData);
       const sendingData = (myData?.cart);
       const email = (myData.email);
       const money = (req.body.payment)
@@ -428,9 +428,9 @@ async function run() {
 
 
 
-    app.get('/order/:email',async (req, res) =>{
+    app.get('/order/:email', verifyToken,async (req, res) =>{
       const email = req.params.email;
-      console.log(email);
+      // console.log(email);
       const filter = {email : email}
       const result = await PaymentCollection.find(filter).toArray();
       res.send(result);
@@ -461,7 +461,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/totalOrder', async(req, res) =>{
+    app.get('/totalOrder', verifyToken, async(req, res) =>{
       const result = await PaymentCollection.find().toArray();
       res.send(result);
     })
