@@ -5,6 +5,8 @@ const SSLCommerzPayment = require('sslcommerz-lts');
 const cors = require('cors');
 require('dotenv').config();
 
+// console.log(process.env.ACCESS_TOKEN_SECRET);
+
 const port = process.env.PORT || 5000;
 const { ObjectId } = require('mongodb');
 
@@ -46,35 +48,46 @@ async function run() {
     
     app.post('/jwt', async(req, res) =>{
       const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '5h'})
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '24h'})
+      // console.log(process.env.ACCESS_TOKEN_SECRET);
       res.send({token})
     })
 
-    const verifyToken = (req, res, next) =>{
-      console.log('inside verify toke ',req.headers.authorization);
-      if(!req.headers.authorization){
-        return res.status(401).send({message: 'unauthorized access'})
+    const verifyToken = (req, res, next) => {
+      const token = req.headers.authorization;
+      //  console.log(token);
+    
+      if (!token) {
+        return res.status(401).json({ message: 'Unauthorized: No token provided' });
       }
-      const token = req.headers.authorization.split(' ')[1];
-      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
-        if(err){
-          return res.status(401).send({message: 'unauthorized access'})
+    
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(403).json({ message: 'Forbidden: Invalid token' });
         }
-        req.decoded = decoded;
-        next();
-      })
-    }
+        req.user = decoded;
+        next(); // Proceed to the next middleware
+      });
+    };
+    
+    // Protected route example
+    app.get('/protected-route', verifyToken, (req, res) => {
+      // If the token is verified, the user object is attached to the request
+      // You can access it using req.user
+      res.json({ message: 'You are authorized!', user: req.user });
+    });
 
-    const verifyAdmin = async (req, res, next) =>{
-      const email = req.decoded.email;
-      const query = {email: email};
-      const user = await UserCollection.findOne(query);
-      const isAdmin = user?.role === 'admin';
-      if(!isAdmin){
-        return res.status(403).send({message: 'forbidden access'})
-      }
-      next();
-    }
+    // const verifyAdmin = async (req, res, next) =>{
+    //   const email = req.decoded.email;
+    //   const query = {email: email};
+    //   const user = await UserCollection.findOne(query);
+    //   const isAdmin = user?.role === 'admin';
+    //   if(!isAdmin){
+    //     return res.status(403).send({message: 'forbidden access'})
+    //   }
+    //   next();
+    // }
   
     
     app.post('/user', async (req, res) =>{
@@ -87,6 +100,14 @@ async function run() {
       const result = await UserCollection.insertOne(user);
       res.send(result)
     })
+
+    // app.post('/verify-token', (req, res) => {
+    //   console.log('Request Body:', req.body);
+    //   // Rest of the verification logic
+    // });
+    
+
+    
     app.get('/user/:email', async (req, res) =>{
       const email = req.params.email;
       const filter = {email : email}
@@ -146,7 +167,7 @@ async function run() {
       res.send(updateStock)
   });
   
-  app.post('/')
+  // app.post('/')
 
       app.get('/addProducts/:id', async (req, res) =>{
       const id = req.params.id;
@@ -163,7 +184,7 @@ async function run() {
 
       app.post('/productDiscount', async(req, res) =>{
       const product = req.body
-      console.log(product);
+      // console.log(product);
       const result = await DiscountCollection.insertOne(product);
       res.send(result);
     });
@@ -187,12 +208,24 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addCart/:email', async (req, res) =>{
+    app.get('/addCart/:email',verifyToken, async (req, res) => {
       const email = req.params.email;
-      const filter = {email : email}
-      const result = await AddCartCollection.find(filter).toArray();
-      res.send(result);
-    })
+      const myMail = req.params.email
+      // Check if the requested user's email matches the authenticated user's email
+      if (req.params.email !== email) {
+        return res.status(403).json({ message: 'Forbidden: You are not authorized to access this resource' });
+      }
+    
+      // Proceed to fetch the user's cart if the authorization is successful
+      try {
+        const filter = { email: email };
+        const result = await AddCartCollection.find(filter).toArray();
+        res.json(result);
+      } catch (error) {
+        console.error('Error fetching user cart:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
 
     // first payment
 
@@ -395,7 +428,7 @@ async function run() {
 
 
 
-    app.get('/order/:email', verifyToken,async (req, res) =>{
+    app.get('/order/:email',async (req, res) =>{
       const email = req.params.email;
       console.log(email);
       const filter = {email : email}
@@ -412,7 +445,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/wishlist/:email', async(req, res) =>{
+    app.get('/wishlist/:email',verifyToken, async(req, res) =>{
       const email = req.params.email;
    
       const filter = {email : email};
