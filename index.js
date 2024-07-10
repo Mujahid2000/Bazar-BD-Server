@@ -303,7 +303,7 @@ async function run() {
 
     if(orderCollection.modifiedCount > 0){
       res.redirect(
-      `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/paid/${req.params.tranId}`
+      `https://bazar-bd.vercel.app/dashboard/paid/${req.params.tranId}`
       )
     }
       
@@ -315,7 +315,7 @@ async function run() {
       const tranId = req.params.tranId
       console.log(tranId)
       res.redirect(
-        `https://bazar-bd-mujahid2000s-projects.vercel.app/dashboard/failed/${req.params.tranId}`
+        `https://bazar-bd.vercel.app/dashboard/failed/${req.params.tranId}`
       )
     })
 
