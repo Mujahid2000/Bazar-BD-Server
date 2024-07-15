@@ -49,6 +49,7 @@ async function run() {
     app.post('/jwt', async (req, res) => {
       try {
         const user = req.body;
+        
         const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '24h' });
         res.send({ token });
       } catch (error) {
@@ -56,10 +57,9 @@ async function run() {
       }
     });
 
+    
     const verifyToken = (req, res, next) => {
       const token = req.headers.authorization;
-      //  console.log(token);
-    
       if (!token) {
         return res.status(401).json({ message: 'Unauthorized: No token provided' });
       }
