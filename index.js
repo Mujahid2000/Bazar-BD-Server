@@ -211,7 +211,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addCart/:email',verifyToken, async (req, res) => {
+    app.get('/addCart/:email', async (req, res) => {
       const email = req.params.email;
       const myMail = req.params.email
       // Check if the requested user's email matches the authenticated user's email
@@ -431,7 +431,7 @@ async function run() {
 
 
 
-    app.get('/order/:email', verifyToken,async (req, res) =>{
+    app.get('/order/:email',async (req, res) =>{
       const email = req.params.email;
       // console.log(email);
       const filter = {email : email}
@@ -448,7 +448,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/wishlist/:email',verifyToken, async(req, res) =>{
+    app.get('/wishlist/:email', async(req, res) =>{
       const email = req.params.email;
    
       const filter = {email : email};
@@ -464,7 +464,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/totalOrder', verifyToken, async(req, res) =>{
+    app.get('/totalOrder', async(req, res) =>{
       const result = await PaymentCollection.find().toArray();
       res.send(result);
     })
