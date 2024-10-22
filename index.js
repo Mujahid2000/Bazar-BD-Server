@@ -50,10 +50,11 @@ async function run() {
       try {
         const user = req.body;
         console.log(user);
-        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5h' });
         res.send({ token });
       } catch (error) {
-        res.status(500).send({ message: 'Error generating token', error });
+        console.log('Error generating token:'), error;
+        res.status(500).send({error: true, message: 'Error generating token', error });
       }
     });
 
@@ -119,7 +120,7 @@ async function run() {
     })
 
 
-    app.get('/users', async (req, res) =>{
+    app.get('/users',verifyToken, async (req, res) =>{
       const result = await UserCollection.find().toArray();
       res.send(result)
     }) 
@@ -211,7 +212,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addCart/:email', async (req, res) => {
+    app.get('/addCart/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const myMail = req.params.email
       // Check if the requested user's email matches the authenticated user's email
@@ -431,7 +432,7 @@ async function run() {
 
 
 
-    app.get('/order/:email',async (req, res) =>{
+    app.get('/order/:email',verifyToken, async (req, res) =>{
       const email = req.params.email;
       // console.log(email);
       const filter = {email : email}
@@ -448,7 +449,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/wishlist/:email', async(req, res) =>{
+    app.get('/wishlist/:email',verifyToken, async(req, res) =>{
       const email = req.params.email;
    
       const filter = {email : email};
@@ -464,7 +465,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/totalOrder', async(req, res) =>{
+    app.get('/totalOrder',verifyToken, async(req, res) =>{
       const result = await PaymentCollection.find().toArray();
       res.send(result);
     })
